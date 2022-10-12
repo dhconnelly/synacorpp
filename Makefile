@@ -1,11 +1,14 @@
 CC=clang++
 CFLAGS=--std=c++17
 
-synacorpp: main.o
-	$(CC) $(LDFLAGS) main.o -o synacorpp
+synacorpp: main.o vm.o
+	$(CC) $(LDFLAGS) $^ -o synacorpp
 
-main.o: main.cc
+main.o: main.cc vm.h
 	$(CC) $(CFLAGS) -c main.cc -o main.o
+
+vm.o: vm.h
+	$(CC) $(CFLAGS) -c vm.cc -o vm.o
 
 .PHONY: clean
 
