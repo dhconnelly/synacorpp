@@ -49,6 +49,8 @@ enum class Opcode : uint16_t {
     And = 12,
     Or = 13,
     Not = 14,
+    Call = 17,
+    Ret = 18,
     Out = 19,
     Noop = 21
 };
@@ -70,6 +72,8 @@ static constexpr Opcode to_opcode(uint16_t op) {
         case Opcode::And: return Opcode::And;
         case Opcode::Or: return Opcode::Or;
         case Opcode::Not: return Opcode::Not;
+        case Opcode::Call: return Opcode::Call;
+        case Opcode::Ret: return Opcode::Ret;
         case Opcode::Out: return Opcode::Out;
         case Opcode::Noop: return Opcode::Noop;
     }
@@ -93,6 +97,8 @@ static constexpr int arity(Opcode op) {
         case Opcode::And: return 3;
         case Opcode::Or: return 3;
         case Opcode::Not: return 2;
+        case Opcode::Call: return 1;
+        case Opcode::Ret: return 0;
         case Opcode::Out: return 1;
         case Opcode::Noop: return 0;
     }
@@ -115,6 +121,8 @@ const char* to_string(Opcode op) {
         case Opcode::And: return "AND";
         case Opcode::Or: return "OR";
         case Opcode::Not: return "NOT";
+        case Opcode::Call: return "CALL";
+        case Opcode::Ret: return "RET";
         case Opcode::Out: return "OUT";
         case Opcode::Noop: return "NOOP";
     }
@@ -142,6 +150,7 @@ private:
     void exec(Instr instr);
     uint16_t get(uint16_t val) const;
     void set(uint16_t loc, uint16_t val);
+    uint16_t pop();
 
     static constexpr size_t kNumReg = 8;
 
@@ -173,6 +182,13 @@ void VM::set(uint16_t loc, uint16_t val) {
     reg_[reg] = val;
 }
 
+uint16_t VM::pop() {
+    if (stack_.empty()) throw out_of_range("stack empty");
+    auto val = stack_.back();
+    stack_.pop_back();
+    return val;
+}
+
 Instr VM::load() {
     auto op = to_opcode(mem_[pc_]);
     return {op, mem_[pc_ + 1], mem_[pc_ + 2], mem_[pc_ + 3]};
@@ -199,10 +215,7 @@ void VM::exec(Instr instr) {
         }
 
         case Opcode::Pop: {
-            if (stack_.empty()) throw out_of_range("stack empty");
-            auto val = stack_.back();
-            stack_.pop_back();
-            set(a, val);
+            set(a, pop());
             break;
         }
 
@@ -266,6 +279,21 @@ void VM::exec(Instr instr) {
         case Opcode::Not: {
             auto result = (~get(b)) & (kMaxInt - 1);
             set(a, result);
+            break;
+        }
+
+        case Opcode::Call: {
+            stack_.push_back(next_pc);
+            next_pc = get(a);
+            break;
+        }
+
+        case Opcode::Ret: {
+            if (stack_.empty()) {
+                state_ = State::Halt;
+                break;
+            }
+            next_pc = pop();
             break;
         }
 
