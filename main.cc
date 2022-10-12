@@ -54,6 +54,7 @@ enum class Opcode : uint16_t {
     Call = 17,
     Ret = 18,
     Out = 19,
+    In = 20,
     Noop = 21
 };
 
@@ -79,6 +80,7 @@ static constexpr Opcode to_opcode(uint16_t op) {
         case Opcode::Call: return Opcode::Call;
         case Opcode::Ret: return Opcode::Ret;
         case Opcode::Out: return Opcode::Out;
+        case Opcode::In: return Opcode::In;
         case Opcode::Noop: return Opcode::Noop;
     }
     throw invalid_argument("bad opcode: " + to_string(op));
@@ -106,6 +108,7 @@ static constexpr int arity(Opcode op) {
         case Opcode::Call: return 1;
         case Opcode::Ret: return 0;
         case Opcode::Out: return 1;
+        case Opcode::In: return 1;
         case Opcode::Noop: return 0;
     }
 }
@@ -132,6 +135,7 @@ const char* to_string(Opcode op) {
         case Opcode::Call: return "CALL";
         case Opcode::Ret: return "RET";
         case Opcode::Out: return "OUT";
+        case Opcode::In: return "IN";
         case Opcode::Noop: return "NOOP";
     }
 }
@@ -144,12 +148,14 @@ public:
         Run,
         Halt,
         Out,
+        In,
     };
 
     VM(vector<uint16_t> program);
     State state() const { return state_; }
     void step();
-    char output() const { return out_; };
+    char output() const { return out_; }
+    void input(char ch) { in_ = ch; }
     bool done() const { return state_ == State::Halt; }
     void enable_trace(bool enable) { trace_ = enable; }
 
@@ -164,7 +170,8 @@ private:
 
     bool trace_ = false;
     uint16_t pc_ = 0;
-    char out_ = '\0';
+    char out_ = 0;
+    char in_ = 0;
     map<uint16_t, uint16_t> mem_;
     vector<uint16_t> stack_;
     array<uint16_t, kNumReg> reg_;
@@ -321,6 +328,12 @@ void VM::exec(Instr instr) {
             break;
         }
 
+        case Opcode::In: {
+            state_ = State::In;
+            next_pc = pc_;
+            break;
+        }
+
         case Opcode::Noop: {
             break;
         }
@@ -330,6 +343,14 @@ void VM::exec(Instr instr) {
 
 void VM::step() {
     if (state_ == State::Halt) return;
+
+    // handle previous input
+    if (state_ == State::In) {
+        const auto& [op, a, b, c] = load();
+        set(a, in_);
+        pc_ = pc_ + arity(Opcode::In) + 1;
+    }
+
     state_ = State::Run;
     exec(load());
 }
@@ -339,6 +360,7 @@ void run(vector<uint16_t> program) {
     if (getenv("TRACE") != nullptr) vm.enable_trace(true);
     while (!vm.done()) {
         if (vm.state() == VM::State::Out) cout << vm.output();
+        if (vm.state() == VM::State::In) vm.input(cin.get());
         try {
             vm.step();
         } catch (const exception& e) {
