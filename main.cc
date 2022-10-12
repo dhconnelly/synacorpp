@@ -49,6 +49,8 @@ enum class Opcode : uint16_t {
     And = 12,
     Or = 13,
     Not = 14,
+    Rmem = 15,
+    Wmem = 16,
     Call = 17,
     Ret = 18,
     Out = 19,
@@ -72,6 +74,8 @@ static constexpr Opcode to_opcode(uint16_t op) {
         case Opcode::And: return Opcode::And;
         case Opcode::Or: return Opcode::Or;
         case Opcode::Not: return Opcode::Not;
+        case Opcode::Rmem: return Opcode::Rmem;
+        case Opcode::Wmem: return Opcode::Wmem;
         case Opcode::Call: return Opcode::Call;
         case Opcode::Ret: return Opcode::Ret;
         case Opcode::Out: return Opcode::Out;
@@ -97,6 +101,8 @@ static constexpr int arity(Opcode op) {
         case Opcode::And: return 3;
         case Opcode::Or: return 3;
         case Opcode::Not: return 2;
+        case Opcode::Rmem: return 2;
+        case Opcode::Wmem: return 2;
         case Opcode::Call: return 1;
         case Opcode::Ret: return 0;
         case Opcode::Out: return 1;
@@ -121,6 +127,8 @@ const char* to_string(Opcode op) {
         case Opcode::And: return "AND";
         case Opcode::Or: return "OR";
         case Opcode::Not: return "NOT";
+        case Opcode::Rmem: return "RMEM";
+        case Opcode::Wmem: return "WMEM";
         case Opcode::Call: return "CALL";
         case Opcode::Ret: return "RET";
         case Opcode::Out: return "OUT";
@@ -282,6 +290,16 @@ void VM::exec(Instr instr) {
             break;
         }
 
+        case Opcode::Rmem: {
+            set(a, mem_[get(b)]);
+            break;
+        }
+
+        case Opcode::Wmem: {
+            mem_[get(a)] = get(b);
+            break;
+        }
+
         case Opcode::Call: {
             stack_.push_back(next_pc);
             next_pc = get(a);
@@ -312,6 +330,7 @@ void VM::exec(Instr instr) {
 
 void VM::step() {
     if (state_ == State::Halt) return;
+    state_ = State::Run;
     exec(load());
 }
 
