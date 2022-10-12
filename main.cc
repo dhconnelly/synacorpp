@@ -31,14 +31,24 @@ vector<uint16_t> read_program(istream& is) {
     return program;
 }
 
-static constexpr uint16_t kMaxInt = (1 << 15) - 1;
+static constexpr uint16_t kMaxInt = (1 << 15);
 
 enum class Opcode : uint16_t {
     Halt = 0,
     Set = 1,
+    Push = 2,
+    Pop = 3,
+    Eq = 4,
+    Gt = 5,
     Jmp = 6,
     Jt = 7,
     Jf = 8,
+    Add = 9,
+    Mult = 10,
+    Mod = 11,
+    And = 12,
+    Or = 13,
+    Not = 14,
     Out = 19,
     Noop = 21
 };
@@ -47,9 +57,19 @@ static constexpr Opcode to_opcode(uint16_t op) {
     switch (static_cast<Opcode>(op)) {
         case Opcode::Halt: return Opcode::Halt;
         case Opcode::Set: return Opcode::Set;
+        case Opcode::Push: return Opcode::Push;
+        case Opcode::Pop: return Opcode::Pop;
+        case Opcode::Eq: return Opcode::Eq;
+        case Opcode::Gt: return Opcode::Gt;
         case Opcode::Jmp: return Opcode::Jmp;
         case Opcode::Jt: return Opcode::Jt;
         case Opcode::Jf: return Opcode::Jf;
+        case Opcode::Add: return Opcode::Add;
+        case Opcode::Mult: return Opcode::Mult;
+        case Opcode::Mod: return Opcode::Mod;
+        case Opcode::And: return Opcode::And;
+        case Opcode::Or: return Opcode::Or;
+        case Opcode::Not: return Opcode::Not;
         case Opcode::Out: return Opcode::Out;
         case Opcode::Noop: return Opcode::Noop;
     }
@@ -60,9 +80,19 @@ static constexpr int arity(Opcode op) {
     switch (op) {
         case Opcode::Halt: return 0;
         case Opcode::Set: return 2;
+        case Opcode::Push: return 1;
+        case Opcode::Pop: return 1;
+        case Opcode::Eq: return 3;
+        case Opcode::Gt: return 3;
         case Opcode::Jmp: return 1;
         case Opcode::Jt: return 2;
         case Opcode::Jf: return 2;
+        case Opcode::Add: return 3;
+        case Opcode::Mult: return 3;
+        case Opcode::Mod: return 3;
+        case Opcode::And: return 3;
+        case Opcode::Or: return 3;
+        case Opcode::Not: return 2;
         case Opcode::Out: return 1;
         case Opcode::Noop: return 0;
     }
@@ -72,9 +102,19 @@ const char* to_string(Opcode op) {
     switch (op) {
         case Opcode::Halt: return "HALT";
         case Opcode::Set: return "SET";
+        case Opcode::Push: return "PUSH";
+        case Opcode::Pop: return "POP";
+        case Opcode::Eq: return "EQ";
+        case Opcode::Gt: return "GT";
         case Opcode::Jmp: return "JMP";
         case Opcode::Jt: return "JT";
         case Opcode::Jf: return "JF";
+        case Opcode::Add: return "ADD";
+        case Opcode::Mult: return "MULT";
+        case Opcode::Mod: return "MOD";
+        case Opcode::And: return "AND";
+        case Opcode::Or: return "OR";
+        case Opcode::Not: return "NOT";
         case Opcode::Out: return "OUT";
         case Opcode::Noop: return "NOOP";
     }
@@ -120,16 +160,16 @@ VM::VM(vector<uint16_t> program) {
 }
 
 uint16_t VM::get(uint16_t val) const {
-    if (val <= kMaxInt) return val;
-    if (auto reg = val - kMaxInt - 1; reg < kNumReg) return reg_[reg];
+    if (val < kMaxInt) return val;
+    if (auto reg = val - kMaxInt; reg < kNumReg) return reg_[reg];
     throw invalid_argument("invalid number: " + to_string(val));
 }
 
 void VM::set(uint16_t loc, uint16_t val) {
-    if (loc <= kMaxInt || loc > kMaxInt + 8) {
+    if (loc < kMaxInt || loc >= kMaxInt + 8) {
         throw invalid_argument("invalid register: " + to_string(loc));
     }
-    auto reg = loc - kMaxInt - 1;
+    auto reg = loc - kMaxInt;
     reg_[reg] = val;
 }
 
@@ -153,6 +193,29 @@ void VM::exec(Instr instr) {
             break;
         }
 
+        case Opcode::Push: {
+            stack_.push_back(get(a));
+            break;
+        }
+
+        case Opcode::Pop: {
+            if (stack_.empty()) throw out_of_range("stack empty");
+            auto val = stack_.back();
+            stack_.pop_back();
+            set(a, val);
+            break;
+        }
+
+        case Opcode::Eq: {
+            set(a, get(b) == get(c));
+            break;
+        }
+
+        case Opcode::Gt: {
+            set(a, get(b) > get(c));
+            break;
+        }
+
         case Opcode::Jmp: {
             next_pc = get(a);
             break;
@@ -167,6 +230,42 @@ void VM::exec(Instr instr) {
         case Opcode::Jf: {
             auto cond = get(a);
             if (cond == 0) next_pc = get(b);
+            break;
+        }
+
+        case Opcode::Add: {
+            auto result = (get(b) + get(c)) % kMaxInt;
+            set(a, result);
+            break;
+        }
+
+        case Opcode::Mult: {
+            auto result = (get(b) * get(c)) % kMaxInt;
+            set(a, result);
+            break;
+        }
+
+        case Opcode::Mod: {
+            auto result = (get(b) % get(c)) % kMaxInt;
+            set(a, result);
+            break;
+        }
+
+        case Opcode::And: {
+            auto result = (get(b) & get(c));
+            set(a, result);
+            break;
+        }
+
+        case Opcode::Or: {
+            auto result = (get(b) | get(c));
+            set(a, result);
+            break;
+        }
+
+        case Opcode::Not: {
+            auto result = (~get(b)) & (kMaxInt - 1);
+            set(a, result);
             break;
         }
 
