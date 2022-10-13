@@ -1,8 +1,10 @@
 #ifndef GAME_H_
 #define GAME_H_
 
+#include <optional>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "vm.h"
@@ -17,27 +19,23 @@ public:
         GameOver,
     };
 
-    Game(std::vector<uint16_t> program) : vm_(program) {}
-    State state() const;
-    void start();
+    Game(std::vector<uint16_t> program) : vm_(program) { tick(); }
+    State state() const { return state_; }
+    std::string_view prompt() const { return prompt_; }
 
-    pt position() const;
-    std::string_view location() const;
-    const std::vector<std::string>& available() const;
-    const std::vector<std::string>& directions() const;
-    const std::vector<std::string>& inventory() const;
-    std::string_view prompt() const;
-
-    void input(std::string_view command);
+    void look(std::string obj) { input("look" + obj); }
+    void go(std::string dir) { input("go" + dir); }
+    void inv() { input("inv"); }
+    void take(std::string obj) { input("take" + obj); }
+    void drop(std::string obj) { input("drop" + obj); }
+    void use(std::string obj) { input("use" + obj); }
 
 private:
+    void tick();
+    void input(std::string_view cmd);
+
     VM vm_;
     State state_ = State::Off;
-    pt position_ = {0, 0};
-    std::string location_;
-    std::vector<std::string> available_;
-    std::vector<std::string> directions_;
-    std::vector<std::string> inventory_;
     std::string prompt_;
 };
 

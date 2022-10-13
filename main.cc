@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 
-#include "vm.h"
+#include "game.h"
 
 using namespace std;
 
@@ -27,18 +27,31 @@ vector<uint16_t> read_program(istream& is) {
 }
 
 void run(vector<uint16_t> program) {
-    VM vm(program);
-    while (vm.state() != VM::State::Halt) {
-        if (vm.state() == VM::State::Out) cout << vm.output();
-        if (vm.state() == VM::State::In) {
-            char ch = cin.get();
-            if (!cin.good()) break;
-            vm.input(ch);
-        }
-        try {
-            vm.step();
-        } catch (const exception& e) {
-            die(e.what());
+    Game game(program);
+    std::string cmd;
+    while (game.state() != Game::State::GameOver) {
+        std::cout << game.prompt() << std::endl;
+        while (true) {
+            printf("> ");
+            std::getline(cin, cmd);
+            if (!cin.good()) return;
+            if (cmd.find("look") == 0) {
+                game.look(cmd.substr(4));
+            } else if (cmd.find("go") == 0) {
+                game.go(cmd.substr(2));
+            } else if (cmd.find("inv") == 0) {
+                game.inv();
+            } else if (cmd.find("take") == 0) {
+                game.take(cmd.substr(4));
+            } else if (cmd.find("drop") == 0) {
+                game.drop(cmd.substr(4));
+            } else if (cmd.find("use") == 0) {
+                game.use(cmd.substr(3));
+            } else {
+                fprintf(stderr, "invalid command: %s\n", cmd.c_str());
+                continue;
+            }
+            break;
         }
     }
 }
