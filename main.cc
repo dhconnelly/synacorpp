@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <vector>
 
 #include "game.h"
@@ -26,8 +27,55 @@ vector<uint16_t> read_program(istream& is) {
     return program;
 }
 
+void navigate_to_maze(Game& game) {
+    game.take("tablet");
+    game.go("doorway");
+    game.go("north");
+    game.go("north");
+    game.go("bridge");
+    game.go("continue");
+    game.go("down");
+    game.go("east");
+    game.take("empty lantern");
+    game.go("west");
+    game.go("west");
+    game.go("passage");
+    game.go("ladder");
+}
+
+using pt = std::pair<int, int>;
+
+bool explore(Game& game, pt loc, std::set<pt>& v) {
+    if (game.loc() == "Panicked and lost") return false;
+    if (game.loc() != "Twisty passages") return true;
+    if (game.avail().size() > 0) return true;
+    for (const auto& exit : game.exits()) {
+        pt nbr;
+        if (exit == "north") nbr = {loc.first, loc.second + 1};
+        else if (exit == "south") nbr = {loc.first, loc.second - 1};
+        else if (exit == "east") nbr = {loc.first + 1, loc.second};
+        else if (exit == "west") nbr = {loc.first - 1, loc.second};
+        if (v.count(nbr) > 0) continue;
+        v.insert(nbr);
+        Game next(game);
+        next.go(exit);
+        bool done = explore(next, nbr, v);
+        v.erase(nbr);
+        if (done) {
+            game = next;
+            return true;
+        }
+    }
+    return false;
+}
+
 void run(vector<uint16_t> program) {
     Game game(program);
+    navigate_to_maze(game);
+    std::set<pt> v;
+    v.insert({0, 0});
+    explore(game, {0, 0}, v);
+
     std::string cmd;
     while (game.state() != Game::State::GameOver) {
         while (true) {
