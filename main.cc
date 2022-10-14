@@ -45,36 +45,42 @@ void navigate_to_maze(Game& game) {
 
 using pt = std::pair<int, int>;
 
-bool explore(Game& game, pt loc, std::set<pt>& v) {
-    if (game.loc() == "Panicked and lost") return false;
-    if (game.loc() != "Twisty passages") return true;
-    if (game.avail().size() > 0) return true;
-    for (const auto& exit : game.exits()) {
-        pt nbr;
-        if (exit == "north") nbr = {loc.first, loc.second + 1};
-        else if (exit == "south") nbr = {loc.first, loc.second - 1};
-        else if (exit == "east") nbr = {loc.first + 1, loc.second};
-        else if (exit == "west") nbr = {loc.first - 1, loc.second};
-        if (v.count(nbr) > 0) continue;
-        v.insert(nbr);
-        Game next(game);
-        next.go(exit);
-        bool done = explore(next, nbr, v);
-        v.erase(nbr);
-        if (done) {
-            game = next;
-            return true;
+using ExploreNode = std::pair<Game, pt>;
+
+void explore(Game& game) {
+    std::set<pt> v;
+    v.insert({0, 0});
+    std::deque<ExploreNode> q;
+    q.push_back({Game(game), {0, 0}});
+    while (!q.empty()) {
+        auto [state, loc] = q.front();
+        printf("[%d, %d]\n", loc.first, loc.second);
+        q.pop_front();
+        for (const auto& exit : state.exits()) {
+            pt nbr;
+            if (exit == "north") nbr = {loc.first, loc.second + 1};
+            else if (exit == "south") nbr = {loc.first, loc.second - 1};
+            else if (exit == "east") nbr = {loc.first + 1, loc.second};
+            else if (exit == "west") nbr = {loc.first - 1, loc.second};
+            if (v.count(nbr) > 0) continue;
+            v.insert(nbr);
+            Game next(state);
+            next.go(exit);
+            if (next.loc() == "Panicked and lost") break;
+            if (next.loc().find("Fumbling around") == 0) break;
+            if (next.loc() != "Twisty passages" || next.avail().size() > 0) {
+                game = next;
+                return;
+            }
+            q.push_back({next, nbr});
         }
     }
-    return false;
 }
 
 void run(vector<uint16_t> program) {
     Game game(program);
     navigate_to_maze(game);
-    std::set<pt> v;
-    v.insert({0, 0});
-    explore(game, {0, 0}, v);
+    explore(game);
 
     std::string cmd;
     while (game.state() != Game::State::GameOver) {
