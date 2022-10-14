@@ -30,23 +30,32 @@ void run(vector<uint16_t> program) {
     Game game(program);
     std::string cmd;
     while (game.state() != Game::State::GameOver) {
-        std::cout << game.prompt() << std::endl;
         while (true) {
-            printf("> ");
+            printf("[%s] > ", game.loc().c_str());
             std::getline(cin, cmd);
             if (!cin.good()) return;
             if (cmd.find("look") == 0) {
-                game.look(cmd.substr(4));
+                std::cout << game.look(cmd.substr(4)) << std::endl;
             } else if (cmd.find("go") == 0) {
-                game.go(cmd.substr(2));
+                std::cout << game.go(cmd.substr(2)) << std::endl;
+            } else if (cmd.find("exits") == 0) {
+                for (const auto& item : game.exits()) {
+                    std::cout << item << std::endl;
+                }
+            } else if (cmd.find("avail") == 0) {
+                for (const auto& item : game.avail()) {
+                    std::cout << item << std::endl;
+                }
             } else if (cmd.find("inv") == 0) {
-                game.inv();
+                for (const auto& item : game.inv()) {
+                    std::cout << item << std::endl;
+                }
             } else if (cmd.find("take") == 0) {
-                game.take(cmd.substr(4));
+                std::cout << game.take(cmd.substr(4)) << std::endl;
             } else if (cmd.find("drop") == 0) {
-                game.drop(cmd.substr(4));
+                std::cout << game.drop(cmd.substr(4)) << std::endl;
             } else if (cmd.find("use") == 0) {
-                game.use(cmd.substr(3));
+                std::cout << game.use(cmd.substr(3)) << std::endl;
             } else {
                 fprintf(stderr, "invalid command: %s\n", cmd.c_str());
                 continue;

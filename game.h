@@ -9,33 +9,33 @@
 
 #include "vm.h"
 
-using pt = std::pair<int, int>;
-
 class Game {
 public:
     enum class State {
-        Off,
         WaitingForInput,
         GameOver,
     };
 
     Game(std::vector<uint16_t> program) : vm_(program) { tick(); }
-    State state() const { return state_; }
-    std::string_view prompt() const { return prompt_; }
+    State state() const;
 
-    void look(std::string obj) { input("look" + obj); }
-    void go(std::string dir) { input("go" + dir); }
-    void inv() { input("inv"); }
-    void take(std::string obj) { input("take" + obj); }
-    void drop(std::string obj) { input("drop" + obj); }
-    void use(std::string obj) { input("use" + obj); }
+    std::string look();
+    std::string look(std::string obj);
+    std::string go(std::string dir);
+    std::string loc();
+    std::vector<std::string> inv();
+    std::vector<std::string> exits();
+    std::vector<std::string> avail();
+    std::string take(std::string obj);
+    std::string drop(std::string obj);
+    std::string use(std::string obj);
 
 private:
-    void tick();
-    void input(std::string_view cmd);
+    std::string tick();
+    std::string input(std::string_view cmd);
 
     VM vm_;
-    State state_ = State::Off;
+    State state_;
     std::string prompt_;
 };
 
