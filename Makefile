@@ -1,5 +1,5 @@
 CC=clang++
-CFLAGS=--std=c++17 -Wall -Werror
+CFLAGS=-Ofast --std=c++17 -Wall -Werror
 
 synacorpp: main.o vm.o game.o
 	$(CC) $(LDFLAGS) $^ -o synacorpp

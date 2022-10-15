@@ -5,8 +5,6 @@
 #include <string>
 #include <utility>
 
-static constexpr uint16_t kMaxInt = (1 << 15);
-
 static bool trace() { return getenv("TRACE") != nullptr; }
 
 static constexpr Opcode to_opcode(uint16_t op) {

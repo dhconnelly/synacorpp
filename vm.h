@@ -6,6 +6,8 @@
 #include <map>
 #include <vector>
 
+static constexpr uint16_t kMaxInt = (1 << 15);
+
 enum class Opcode : uint16_t {
     Halt = 0,
     Set = 1,
