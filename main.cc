@@ -129,11 +129,21 @@ void navigate_to_maze(Game& game) {
     game.input("use teleporter");
     game.input("take business card");
     game.input("take strange book");
-    std::cout << "computing teleporter register..." << std::endl;
-    auto val = compute_reg8();
-    std::cout << "teleporter register: " << val << std::endl;
-    game.set_8th_reg(val);
-    std::cout << game.input("use teleporter") << std::endl;
+    // std::cout << "computing teleporter register..." << std::endl;
+    // auto val = compute_reg8();
+    // std::cout << "teleporter register: " << val << std::endl;
+    game.set_8th_reg(25734);
+    game.input("use teleporter");
+    game.input("north");
+    game.input("north");
+    game.input("north");
+    game.input("north");
+    game.input("north");
+    game.input("north");
+    game.input("north");
+    game.input("east");
+    game.input("take journal");
+    game.input("west");
 }
 
 void run(vector<uint16_t> program) {

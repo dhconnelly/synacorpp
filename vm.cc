@@ -259,7 +259,6 @@ void VM::exec(Instr instr) {
         case Opcode::Call: {
             if (pc_ == 5489) {
                 reg_[0] = 6;
-                printf("skipping verification\n");
                 break;
             }
             stack_.push_back(next_pc);
