@@ -7,7 +7,7 @@ synacorpp: main.o vm.o game.o
 main.o: main.cc game.h
 	$(CC) $(CFLAGS) -c main.cc -o main.o
 
-vm.o: vm.h
+vm.o: vm.h vm.cc
 	$(CC) $(CFLAGS) -c vm.cc -o vm.o
 
 game.o: game.cc vm.h

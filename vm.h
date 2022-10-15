@@ -31,6 +31,8 @@ enum class Opcode : uint16_t {
     Noop = 21
 };
 
+static constexpr size_t kNumReg = 8;
+
 class VM final {
 public:
     enum class State {
@@ -55,12 +57,18 @@ private:
     void set(uint16_t loc, uint16_t val);
     uint16_t pop();
 
-    static constexpr size_t kNumReg = 8;
+    uint16_t memget(uint16_t addr) {
+        return mem_.size() > addr ? mem_[addr] : 0;
+    }
+    void memset(uint16_t addr, uint16_t val) {
+        if (addr >= mem_.size()) mem_.resize(2 * static_cast<size_t>(addr) + 1);
+        mem_[addr] = val;
+    }
 
     uint16_t pc_ = 0;
     char out_ = 0;
     char in_ = 0;
-    std::map<uint16_t, uint16_t> mem_;
+    std::vector<uint16_t> mem_;
     std::vector<uint16_t> stack_;
     std::array<uint16_t, kNumReg> reg_;
     State state_ = State::Run;

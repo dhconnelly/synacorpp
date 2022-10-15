@@ -91,8 +91,15 @@ const char* to_string(Opcode op) {
     }
 }
 
+std::string value_string(uint16_t val) {
+    if (val < kMaxInt) return std::to_string(val);
+    if (auto reg = val - kMaxInt; reg < kNumReg)
+        return "r" + std::to_string(reg);
+    throw std::invalid_argument("invalid number: " + std::to_string(val));
+}
+
 VM::VM(std::vector<uint16_t> program) {
-    for (size_t i = 0; i < program.size(); i++) mem_[i] = program[i];
+    for (size_t i = 0; i < program.size(); i++) memset(i, program[i]);
     for (size_t i = 0; i < reg_.size(); i++) reg_[i] = 0;
 }
 
@@ -118,13 +125,20 @@ uint16_t VM::pop() {
 }
 
 VM::Instr VM::load() {
-    auto op = to_opcode(mem_[pc_]);
-    return {op, mem_[pc_ + 1], mem_[pc_ + 2], mem_[pc_ + 3]};
+    auto op = to_opcode(memget(pc_));
+    return {op, memget(pc_ + 1), memget(pc_ + 2), memget(pc_ + 3)};
 }
 
 void VM::exec(Instr instr) {
     const auto& [op, a, b, c] = instr;
-    if (trace()) printf("[%8u] %s %u %u %u\n", pc_, to_string(op), a, b, c);
+    if (trace()) {
+        int n = arity(op);
+        fprintf(stderr, "[%8u] %s", pc_, to_string(op));
+        if (n > 0) fprintf(stderr, " %s", value_string(a).c_str());
+        if (n > 1) fprintf(stderr, " %s", value_string(b).c_str());
+        if (n > 2) fprintf(stderr, " %s", value_string(c).c_str());
+        fprintf(stderr, "\n");
+    }
     auto next_pc = pc_ + arity(op) + 1;
     switch (op) {
         case Opcode::Halt: {
@@ -211,12 +225,12 @@ void VM::exec(Instr instr) {
         }
 
         case Opcode::Rmem: {
-            set(a, mem_[get(b)]);
+            set(a, memget(get(b)));
             break;
         }
 
         case Opcode::Wmem: {
-            mem_[get(a)] = get(b);
+            memset(get(a), get(b));
             break;
         }
 

@@ -29,10 +29,10 @@ public:
     std::string take(std::string obj);
     std::string drop(std::string obj);
     std::string use(std::string obj);
+    std::string input(std::string_view cmd);
 
 private:
     std::string tick();
-    std::string input(std::string_view cmd);
 
     VM vm_;
     State state_;
