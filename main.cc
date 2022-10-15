@@ -29,45 +29,7 @@ vector<uint16_t> read_program(istream& is) {
 
 using Memo = std::array<std::array<std::optional<uint16_t>, kMaxInt>, 5>;
 
-// r0 = 4, r1 = 1
 uint16_t alg(uint16_t r0, uint16_t r1, uint16_t r7, Memo& memo) {
-    // printf("%u %u %u\n", r0, r1, r7);
-    assert(r0 < 5);
-    assert(r1 < kMaxInt);
-    // f(0, n, z) = n+1
-    // f(1, 0, z) = f(0, z, z) = z+1
-    // f(1, 1, z) = f(0, f(1, 0, z), z) = f(0, z+1, z) = z+2
-    // f(1, 2, z) = f(0, f(1, 1, z), z) = f(0, z+2, z) = z+3
-    // f(1, n, z) = z+n+1
-    // f(2, 0, z) = f(1, z, z) = 2z+1
-    // f(2, 1, z) = f(1, f(2, 0, z), z) = f(1, 2z+1, z) = z+(2z+1)+1 = 3z+2
-    // f(2, 2, z) = f(1, f(2, 1, z), z) = f(1, 3z+2, z) = z+(3z+2)+1 = 4z+3
-    // f(2, 3, z) = f(1, f(2, 2, z), z) = f(1, 4z+3, z) = z+(4z+3)+1 = 5z+4
-    // f(2, n, z) = (2+n)z + (n+1)
-    // f(3, 0, z) = f(2, z, z) = (2+z)z + (z+1) = z^2 + 3z + 1
-    // f(3, 1, z) = f(2, f(3, 0, z), z) = f(2, z^2 + 3z + 1, z) = (2 + z^2 + 3z
-    // + 1)z + (z^2 + 3z + 1 + 1) = 2z + z^3 + 3z^2 + z + z^2 + 3z + 2 = z^3 +
-    // 4z^2 + 6z + 2 f(3, 2, z) = f(2, f(3, 1, z), z) = f(2, z^3 + 4z^2 + 6z +
-    // 2, z) = (2 + z^3 + 4z^2 + 6z + 2)z + (z^3 + 4z^2 + 6z + 2 + 1) =
-    if (r0 == 0) return (r1 + 1) % kMaxInt;
-    if (auto val = memo[r0][r1]; val.has_value()) {
-        // printf("%u %u %u = %u (cached)\n", r0, r1, r7, it->second);
-        return *val;
-    }
-
-    if (r1 > 0) {
-        uint16_t y = alg(r0, (r1 + 32767) % kMaxInt, r7, memo);
-        uint16_t x = alg((r0 + 32767) % kMaxInt, y, r7, memo);
-        memo[r0][r1] = x;
-        // printf("%u %u %u = %u\n", r0, r1, r7, result);
-        return x;
-    } else {
-        uint16_t x = alg((r0 + 32767) % kMaxInt, r7, r7, memo);
-        memo[r0][r1] = x;
-        // printf("%u %u %u = %u\n", r0, r1, r7, result);
-        return x;
-    }
-
     /*
     [    6027] JT r0 6035
     [    6030] ADD r0 r1 1
@@ -86,32 +48,30 @@ uint16_t alg(uint16_t r0, uint16_t r1, uint16_t r7, Memo& memo) {
     [    6065] CALL 6027
     [    6067] RET
     */
+
+    assert(r0 < 5);
+    assert(r1 < kMaxInt);
+    if (r0 == 0) return (r1 + 1) % kMaxInt;
+    if (auto val = memo[r0][r1]; val.has_value()) return *val;
+    if (r1 > 0) {
+        uint16_t y = alg(r0, (r1 + 32767) % kMaxInt, r7, memo);
+        uint16_t x = alg((r0 + 32767) % kMaxInt, y, r7, memo);
+        memo[r0][r1] = x;
+        return x;
+    } else {
+        uint16_t x = alg((r0 + 32767) % kMaxInt, r7, r7, memo);
+        memo[r0][r1] = x;
+        return x;
+    }
 }
 
 uint16_t compute_reg8() {
-    /*
-    // verification algorithm
-    r0 = 4
-    r1 = 1
-    r7 = input
-    want result = 6
-    */
-    std::optional<uint16_t> val;
-    for (uint16_t i = 0; i < kMaxInt; i++) {
-        if (i % 100 == 0) printf("testing %u\n", i);
+    for (uint16_t r7 = 0; r7 < kMaxInt; r7++) {
         Memo memo;
-        for (int r0 = 0; r0 < 5; r0++) {
-            for (int r1 = 0; r1 < kMaxInt; r1++) {
-                memo[r0][r1] = std::nullopt;
-            }
-        }
-        auto result = alg(4, 1, i, memo);
-        if (result == 6) {
-            assert(!val.has_value());
-            val = i;
-        }
+        auto result = alg(4, 1, r7, memo);
+        if (result == 6) return r7;
     }
-    return *val;
+    assert(false);
 }
 
 void navigate_to_maze(Game& game) {
@@ -169,8 +129,9 @@ void navigate_to_maze(Game& game) {
     game.input("use teleporter");
     game.input("take business card");
     game.input("take strange book");
+    std::cout << "computing teleporter register..." << std::endl;
     auto val = compute_reg8();
-    std::cout << "found teleporter register: " << val << std::endl;
+    std::cout << "teleporter register: " << val << std::endl;
     game.set_8th_reg(val);
     std::cout << game.input("use teleporter") << std::endl;
 }
