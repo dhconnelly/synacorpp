@@ -47,6 +47,7 @@ public:
     void step();
     char output() const { return out_; }
     void input(char ch) { in_ = ch; }
+    void set_reg(size_t reg, uint16_t val) { reg_[reg] = val; }
 
 private:
     using Instr = std::tuple<Opcode, uint16_t, uint16_t, uint16_t>;

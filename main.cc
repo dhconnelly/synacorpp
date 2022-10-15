@@ -57,6 +57,31 @@ void navigate_to_maze(Game& game) {
     game.input("west");
     game.input("west");
     game.input("west");
+    game.input("north");
+    game.input("take red coin");
+    game.input("north");
+    game.input("west");
+    game.input("take blue coin");
+    game.input("up");
+    game.input("take shiny coin");
+    game.input("down");
+    game.input("east");
+    game.input("east");
+    game.input("take concave coin");
+    game.input("down");
+    game.input("take corroded coin");
+    game.input("up");
+    game.input("west");
+    game.input("use blue coin");
+    game.input("use red coin");
+    game.input("use shiny coin");
+    game.input("use concave coin");
+    game.input("use corroded coin");
+    game.input("north");
+    game.input("take teleporter");
+    game.input("use teleporter");
+    game.input("take business card");
+    game.input("take strange book");
 }
 
 void run(vector<uint16_t> program) {
@@ -67,7 +92,13 @@ void run(vector<uint16_t> program) {
         printf("[%s] > ", game.loc().c_str());
         std::getline(cin, cmd);
         if (!cin.good()) return;
-        std::cout << game.input(cmd) << std::endl;
+        if (cmd.find("reg8") == 0) {
+            auto s = cmd.substr(5);
+            int val = atoi(s.data());
+            game.set_8th_reg(val);
+        } else {
+            std::cout << game.input(cmd) << std::endl;
+        }
     }
 }
 

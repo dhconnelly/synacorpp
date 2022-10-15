@@ -21,6 +21,7 @@ public:
 
     std::string loc();
     std::string input(std::string_view cmd);
+    void set_8th_reg(uint16_t val) { vm_.set_reg(7, val); }
 
 private:
     std::string tick();
