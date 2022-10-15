@@ -27,6 +27,34 @@ vector<uint16_t> read_program(istream& is) {
     return program;
 }
 
+uint16_t compute_reg8() {
+    /*
+    // verification algorithm
+    r0 = 4
+    r1 = 1
+    r7 = input
+    want result = 6
+
+    [    6027] JT r0 6035
+    [    6030] ADD r0 r1 1
+    [    6034] RET
+    [    6035] JT r1 6048
+    [    6038] ADD r0 r0 32767
+    [    6042] SET r1 r7
+    [    6045] CALL 6027
+    [    6047] RET
+    [    6048] PUSH r0
+    [    6050] ADD r1 r1 32767
+    [    6054] CALL 6027
+    [    6056] SET r1 r0
+    [    6059] POP r0
+    [    6061] ADD r0 r0 32767
+    [    6065] CALL 6027
+    [    6067] RET
+    */
+    return 1;
+}
+
 void navigate_to_maze(Game& game) {
     game.input("take tablet");
     game.input("doorway");
@@ -82,6 +110,8 @@ void navigate_to_maze(Game& game) {
     game.input("use teleporter");
     game.input("take business card");
     game.input("take strange book");
+    game.set_8th_reg(compute_reg8());
+    std::cout << game.input("use teleporter") << std::endl;
 }
 
 void run(vector<uint16_t> program) {
@@ -103,10 +133,11 @@ void run(vector<uint16_t> program) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) die("usage: synacorpp <bin>");
-    ifstream is(argv[1]);
+    if (argc != 3) die("usage: synacorpp <cmd> <bin>\ncommands: run, disasm\n");
+    ifstream is(argv[2]);
     if (!is.good()) die(strerror(errno));
     auto program = read_program(is);
-    run(program);
+    if (argv[1] == string("run")) run(program);
+    if (argv[1] == string("disasm")) disasm(program);
     return 0;
 }

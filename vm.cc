@@ -37,6 +37,11 @@ static constexpr Opcode to_opcode(uint16_t op) {
     throw std::invalid_argument("bad opcode: " + std::to_string(op));
 }
 
+bool is_opcode(uint16_t val) {
+    return val >= static_cast<uint16_t>(Opcode::Halt) &&
+           val <= static_cast<uint16_t>(Opcode::Noop);
+}
+
 static constexpr int arity(Opcode op) {
     switch (op) {
         case Opcode::Halt: return 0;
@@ -127,6 +132,25 @@ uint16_t VM::pop() {
 VM::Instr VM::load() {
     auto op = to_opcode(memget(pc_));
     return {op, memget(pc_ + 1), memget(pc_ + 2), memget(pc_ + 3)};
+}
+
+void disasm(const std::vector<uint16_t>& prog) {
+    for (int pc = 0; pc < prog.size();) {
+        auto x = prog[pc];
+        if (!is_opcode(x)) {
+            printf("[%8u] %u\n", pc, x);
+            pc++;
+            continue;
+        }
+        auto op = to_opcode(x);
+        int n = arity(op);
+        printf("[%8u] %s", pc, to_string(op));
+        if (n > 0) printf(" %s", value_string(prog[pc + 1]).c_str());
+        if (n > 1) printf(" %s", value_string(prog[pc + 2]).c_str());
+        if (n > 2) printf(" %s", value_string(prog[pc + 3]).c_str());
+        printf("\n");
+        pc += n + 1;
+    }
 }
 
 void VM::exec(Instr instr) {
@@ -235,6 +259,11 @@ void VM::exec(Instr instr) {
         }
 
         case Opcode::Call: {
+            if (pc_ == 5489) {
+                reg_[0] = 6;
+                printf("skipping verification\n");
+                break;
+            }
             stack_.push_back(next_pc);
             next_pc = get(a);
             break;

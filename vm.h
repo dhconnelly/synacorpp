@@ -33,6 +33,8 @@ enum class Opcode : uint16_t {
 
 static constexpr size_t kNumReg = 8;
 
+void disasm(const std::vector<uint16_t>& prog);
+
 class VM final {
 public:
     enum class State {
