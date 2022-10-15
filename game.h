@@ -19,16 +19,7 @@ public:
     Game(std::vector<uint16_t> program) : vm_(program) { tick(); }
     State state() const;
 
-    std::string look();
-    std::string look(std::string obj);
-    std::string go(std::string dir);
     std::string loc();
-    std::vector<std::string> inv();
-    std::vector<std::string> exits();
-    std::vector<std::string> avail();
-    std::string take(std::string obj);
-    std::string drop(std::string obj);
-    std::string use(std::string obj);
     std::string input(std::string_view cmd);
 
 private:
