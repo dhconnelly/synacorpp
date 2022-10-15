@@ -27,10 +27,13 @@ vector<uint16_t> read_program(istream& is) {
     return program;
 }
 
-using Memo = std::array<std::array<uint16_t, kMaxInt>, 5>;
+using Memo = std::array<std::array<std::optional<uint16_t>, kMaxInt>, 5>;
 
 // r0 = 4, r1 = 1
 uint16_t alg(uint16_t r0, uint16_t r1, uint16_t r7, Memo& memo) {
+    // printf("%u %u %u\n", r0, r1, r7);
+    assert(r0 < 5);
+    assert(r1 < kMaxInt);
     // f(0, n, z) = n+1
     // f(1, 0, z) = f(0, z, z) = z+1
     // f(1, 1, z) = f(0, f(1, 0, z), z) = f(0, z+1, z) = z+2
@@ -46,23 +49,25 @@ uint16_t alg(uint16_t r0, uint16_t r1, uint16_t r7, Memo& memo) {
     // + 1)z + (z^2 + 3z + 1 + 1) = 2z + z^3 + 3z^2 + z + z^2 + 3z + 2 = z^3 +
     // 4z^2 + 6z + 2 f(3, 2, z) = f(2, f(3, 1, z), z) = f(2, z^3 + 4z^2 + 6z +
     // 2, z) = (2 + z^3 + 4z^2 + 6z + 2)z + (z^3 + 4z^2 + 6z + 2 + 1) =
-    if (r0 == 0) return r1 + 1;
-    if (auto val = memo[r0][r1]; val > 0) {
+    if (r0 == 0) return (r1 + 1) % kMaxInt;
+    if (auto val = memo[r0][r1]; val.has_value()) {
         // printf("%u %u %u = %u (cached)\n", r0, r1, r7, it->second);
-        return val;
+        return *val;
     }
+
     if (r1 > 0) {
-        uint16_t y = alg(r0, r1 - 1, r7, memo);
-        uint16_t x = alg(r0 - 1, y, r7, memo);
+        uint16_t y = alg(r0, (r1 + 32767) % kMaxInt, r7, memo);
+        uint16_t x = alg((r0 + 32767) % kMaxInt, y, r7, memo);
         memo[r0][r1] = x;
         // printf("%u %u %u = %u\n", r0, r1, r7, result);
         return x;
     } else {
-        uint16_t x = alg(r0 - 1, r7, r7, memo);
+        uint16_t x = alg((r0 + 32767) % kMaxInt, r7, r7, memo);
         memo[r0][r1] = x;
         // printf("%u %u %u = %u\n", r0, r1, r7, result);
         return x;
     }
+
     /*
     [    6027] JT r0 6035
     [    6030] ADD r0 r1 1
@@ -83,16 +88,6 @@ uint16_t alg(uint16_t r0, uint16_t r1, uint16_t r7, Memo& memo) {
     */
 }
 
-Memo memo() {
-    Memo m;
-    for (int i = 0; i < 5; i++) {
-        for (int j = 0; j < kMaxInt; j++) {
-            m[i][j] = 0;
-        }
-    }
-    return m;
-}
-
 uint16_t compute_reg8() {
     /*
     // verification algorithm
@@ -101,16 +96,22 @@ uint16_t compute_reg8() {
     r7 = input
     want result = 6
     */
+    std::optional<uint16_t> val;
     for (uint16_t i = 0; i < kMaxInt; i++) {
         if (i % 100 == 0) printf("testing %u\n", i);
-        uint16_t r0 = 4;
-        uint16_t r1 = 1;
-        uint16_t r7 = i;
-        auto m = memo();
-        auto result = alg(r0, r1, r7, m);
-        if (result == 6) return i;
+        Memo memo;
+        for (int r0 = 0; r0 < 5; r0++) {
+            for (int r1 = 0; r1 < kMaxInt; r1++) {
+                memo[r0][r1] = std::nullopt;
+            }
+        }
+        auto result = alg(4, 1, i, memo);
+        if (result == 6) {
+            assert(!val.has_value());
+            val = i;
+        }
     }
-    assert(false);
+    return *val;
 }
 
 void navigate_to_maze(Game& game) {
@@ -182,13 +183,7 @@ void run(vector<uint16_t> program) {
         printf("[%s] > ", game.loc().c_str());
         std::getline(cin, cmd);
         if (!cin.good()) return;
-        if (cmd.find("reg8") == 0) {
-            auto s = cmd.substr(5);
-            int val = atoi(s.data());
-            game.set_8th_reg(val);
-        } else {
-            std::cout << game.input(cmd) << std::endl;
-        }
+        std::cout << game.input(cmd) << std::endl;
     }
 }
 
