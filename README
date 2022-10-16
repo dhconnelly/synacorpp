@@ -3,4 +3,8 @@
 ## usage
 
     make
-    ./synacorpp challenge.bin
+    ./synacorpp run challenge.bin
+
+you can also disassemble the binary:
+
+    ./synacorpp disasm challenge.bin
