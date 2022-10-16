@@ -3,4 +3,4 @@
 ## usage
 
     make
-    ./synacorpp
+    ./synacorpp challenge.bin

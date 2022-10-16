@@ -30,7 +30,7 @@ vector<uint16_t> read_program(istream& is) {
 
 using Memo = std::array<std::array<std::optional<uint16_t>, kMaxInt>, 5>;
 
-uint16_t alg(uint16_t r0, uint16_t r1, uint16_t r7, Memo& memo) {
+uint16_t verify_reg8(uint16_t r0, uint16_t r1, uint16_t r7, Memo& memo) {
     /*
     [    6027] JT r0 6035
     [    6030] ADD r0 r1 1
@@ -55,12 +55,12 @@ uint16_t alg(uint16_t r0, uint16_t r1, uint16_t r7, Memo& memo) {
     if (r0 == 0) return (r1 + 1) % kMaxInt;
     if (auto val = memo[r0][r1]; val.has_value()) return *val;
     if (r1 > 0) {
-        uint16_t y = alg(r0, (r1 + 32767) % kMaxInt, r7, memo);
-        uint16_t x = alg((r0 + 32767) % kMaxInt, y, r7, memo);
+        uint16_t y = verify_reg8(r0, (r1 + 32767) % kMaxInt, r7, memo);
+        uint16_t x = verify_reg8((r0 + 32767) % kMaxInt, y, r7, memo);
         memo[r0][r1] = x;
         return x;
     } else {
-        uint16_t x = alg((r0 + 32767) % kMaxInt, r7, r7, memo);
+        uint16_t x = verify_reg8((r0 + 32767) % kMaxInt, r7, r7, memo);
         memo[r0][r1] = x;
         return x;
     }
@@ -69,7 +69,7 @@ uint16_t alg(uint16_t r0, uint16_t r1, uint16_t r7, Memo& memo) {
 uint16_t compute_reg8() {
     for (uint16_t r7 = 0; r7 < kMaxInt; r7++) {
         Memo memo;
-        auto result = alg(4, 1, r7, memo);
+        auto result = verify_reg8(4, 1, r7, memo);
         if (result == 6) return r7;
     }
     assert(false);
@@ -154,10 +154,12 @@ bool path_exists(int row, int col, int sum, int steps,
     return false;
 }
 
-std::string solve(Game& game) {
+std::string solve_orb_path(Game& game) {
     printf("finding orb path...\n");
     std::vector<Step> path;
     bool exists = false;
+    // i found a path manually in 16 steps that took too long, so we need
+    // one shorter than that
     for (int steps = 6; steps <= 14; steps += 2) {
         if (path_exists(0, 0, kStart, steps, path)) {
             exists = true;
@@ -252,7 +254,7 @@ void play(Game& game) {
     game.input("north");
     game.input("north");
     game.input("take orb");
-    solve(game);
+    solve_orb_path(game);
     game.input("vault");
     game.input("take mirror");
     std::cout << game.input("use mirror") << std::endl;
