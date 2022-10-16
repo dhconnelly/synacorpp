@@ -158,7 +158,7 @@ std::string solve(Game& game) {
     printf("finding orb path...\n");
     std::vector<Step> path;
     bool exists = false;
-    for (int steps = 12; steps <= 12; steps += 2) {
+    for (int steps = 6; steps <= 14; steps += 2) {
         if (path_exists(0, 0, kStart, steps, path)) {
             exists = true;
             break;
@@ -180,6 +180,7 @@ std::string solve(Game& game) {
 
 void play(Game& game) {
     game.input("take tablet");
+    game.input("use tablet");
     game.input("doorway");
     game.input("north");
     game.input("north");
@@ -233,10 +234,10 @@ void play(Game& game) {
     game.input("use teleporter");
     game.input("take business card");
     game.input("take strange book");
-    // std::cout << "computing teleporter register..." << std::endl;
-    // auto val = compute_reg8();
-    // std::cout << "teleporter register: " << val << std::endl;
-    game.set_8th_reg(25734);
+    std::cout << "computing teleporter register..." << std::endl;
+    auto val = compute_reg8();
+    std::cout << "teleporter register: " << val << std::endl;
+    game.set_8th_reg(val);
     game.input("use teleporter");
     game.input("north");
     game.input("north");
@@ -253,19 +254,13 @@ void play(Game& game) {
     game.input("take orb");
     solve(game);
     game.input("vault");
+    game.input("take mirror");
+    std::cout << game.input("use mirror") << std::endl;
 }
 
 void run(vector<uint16_t> program) {
     Game game(program);
     play(game);
-    std::string cmd;
-    while (game.state() != Game::State::GameOver) {
-        printf("[%s] > ", game.loc().c_str());
-        std::getline(cin, cmd);
-        if (!cin.good()) return;
-        if (cmd == "solve") std::cout << solve(game) << std::endl;
-        else std::cout << game.input(cmd) << std::endl;
-    }
 }
 
 int main(int argc, char* argv[]) {
