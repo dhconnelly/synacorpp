@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <set>
+#include <variant>
 #include <vector>
 
 #include "game.h"
@@ -74,7 +75,110 @@ uint16_t compute_reg8() {
     assert(false);
 }
 
-void navigate_to_maze(Game& game) {
+using pt = std::pair<int, int>;
+enum class Dir { North, South, East, West };
+
+pt dir_to_d(Dir dir) {
+    switch (dir) {
+        case Dir::North: return {1, 0};
+        case Dir::South: return {-1, 0};
+        case Dir::East: return {0, 1};
+        case Dir::West: return {0, -1};
+    }
+}
+
+int dist(int row1, int col1, int row2, int col2) {
+    int dr = row2 - row1;
+    int dc = col2 - col1;
+    return (dr > 0 ? dr : -dr) + (dc > 0 ? dc : -dc);
+}
+
+using tile = std::variant<int, char>;
+
+static std::array<std::array<tile, 4>, 4> kGrid{
+    std::array<tile, 4>{22, '-', 9, '*'},
+    std::array<tile, 4>{'+', 4, '-', 18},
+    std::array<tile, 4>{4, '*', 11, '*'},
+    std::array<tile, 4>{'*', 8, '-', 1},
+};
+
+constexpr int kTarget = 30;
+constexpr int kStart = 22;
+
+static std::pair<Dir, std::array<Dir, 3>> kMoves[] = {
+    {Dir::North, {Dir::North, Dir::East, Dir::West}},
+    {Dir::South, {Dir::South, Dir::East, Dir::West}},
+    {Dir::East, {Dir::East, Dir::North, Dir::South}},
+    {Dir::West, {Dir::West, Dir::North, Dir::South}},
+};
+
+int apply(int base, char op, int val) {
+    switch (op) {
+        case '+': return base + val;
+        case '*': return base * val;
+        case '-': return base - val;
+    }
+    assert(false);
+}
+
+using Step = std::pair<Dir, int>;
+
+bool path_exists(int row, int col, int sum, int steps,
+                 std::vector<Step>& path) {
+    if (row == 3 && col == 3) return sum == kTarget;
+    if (steps <= 0) return false;
+    for (const auto& [step1, step2s] : kMoves) {
+        for (const auto step2 : step2s) {
+            auto [dr1, dc1] = dir_to_d(step1);
+            auto [dr2, dc2] = dir_to_d(step2);
+            auto next_row = row + dr1 + dr2;
+            auto next_col = col + dc1 + dc2;
+            if (dist(next_row, next_col, 3, 3) > steps) continue;
+            if (next_row < 0 || next_row > 3 || next_col < 0 || next_col > 3) {
+                continue;
+            }
+            if (next_row == 0 && next_col == 0) continue;
+            char op = std::get<char>(kGrid[row + dr1][col + dc1]);
+            int val = std::get<int>(kGrid[next_row][next_col]);
+            int next_sum = apply(sum, op, val);
+            if (next_sum <= 0) continue;
+            path.push_back({step1, sum});
+            path.push_back({step2, next_sum});
+            if (path_exists(next_row, next_col, next_sum, steps - 2, path)) {
+                return true;
+            }
+            path.pop_back();
+            path.pop_back();
+        }
+    }
+    return false;
+}
+
+std::string solve(Game& game) {
+    printf("finding orb path...\n");
+    std::vector<Step> path;
+    bool exists = false;
+    for (int steps = 12; steps <= 12; steps += 2) {
+        if (path_exists(0, 0, kStart, steps, path)) {
+            exists = true;
+            break;
+        }
+    }
+    assert(exists);
+    printf("path in %lu\n", path.size());
+    std::string last;
+    for (auto [dir, sum] : path) {
+        switch (dir) {
+            case Dir::North: last = game.input("north"); break;
+            case Dir::South: last = game.input("south"); break;
+            case Dir::East: last = game.input("east"); break;
+            case Dir::West: last = game.input("west"); break;
+        }
+    }
+    return last;
+}
+
+void play(Game& game) {
     game.input("take tablet");
     game.input("doorway");
     game.input("north");
@@ -144,17 +248,23 @@ void navigate_to_maze(Game& game) {
     game.input("east");
     game.input("take journal");
     game.input("west");
+    game.input("north");
+    game.input("north");
+    game.input("take orb");
+    solve(game);
+    game.input("vault");
 }
 
 void run(vector<uint16_t> program) {
     Game game(program);
-    navigate_to_maze(game);
+    play(game);
     std::string cmd;
     while (game.state() != Game::State::GameOver) {
         printf("[%s] > ", game.loc().c_str());
         std::getline(cin, cmd);
         if (!cin.good()) return;
-        std::cout << game.input(cmd) << std::endl;
+        if (cmd == "solve") std::cout << solve(game) << std::endl;
+        else std::cout << game.input(cmd) << std::endl;
     }
 }
 
